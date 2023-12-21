@@ -1,4 +1,5 @@
 using System.Linq;
+using Content.Server.DeltaV.Glimmer.Systems;
 using Robust.Shared.Random;
 using Content.Server.GameTicking.Rules.Components;
 using Content.Server.NPC.Components;
@@ -25,9 +26,9 @@ internal sealed class GlimmerWispRule : StationEventSystem<GlimmerWispRuleCompon
         var hiddenSpawnLocations = EntityManager.EntityQuery<MidRoundAntagSpawnLocationComponent, TransformComponent>().ToList();
 
         var baseCount = Math.Max(1, EntityManager.EntityQuery<PsionicComponent, NpcFactionMemberComponent>().Count() / 10);
-        int multiplier = Math.Max(1, (int) _glimmerSystem.GetGlimmerTier() - 2);
+        //int multiplier = Math.Max(1, (int) _glimmerSystem.GetGlimmerTier() - 2);
 
-        var total = baseCount * multiplier;
+        var total = baseCount;// * multiplier;
 
         int i = 0;
         while (i < total)

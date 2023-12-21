@@ -1,5 +1,6 @@
 using Content.Server.Abilities.Psionics;
 using Content.Server.Chat.Systems;
+using Content.Server.DeltaV.Glimmer.Systems;
 using Content.Server.Radio.Components;
 using Content.Server.Radio.EntitySystems;
 using Content.Server.StationEvents.Events;
@@ -23,8 +24,8 @@ public sealed partial class SophicScribeSystem : EntitySystem
     {
         base.Update(frameTime);
 
-        if (_glimmerSystem.Glimmer == 0)
-            return; // yes, return. Glimmer value is global.
+        if (!_glimmerSystem.Enabled)
+            return;
 
         var curTime = _timing.CurTime;
 
@@ -37,7 +38,7 @@ public sealed partial class SophicScribeSystem : EntitySystem
             if (!TryComp<IntrinsicRadioTransmitterComponent>(scribe, out var radio))
                 continue;
 
-            var message = Loc.GetString("glimmer-report", ("level", _glimmerSystem.Glimmer));
+            var message = Loc.GetString("glimmer-report", ("level", _glimmerSystem.GetGlimmer(scribeComponent.Noosphere)));
             var channel = _prototypeManager.Index<RadioChannelPrototype>("Science");
             _radioSystem.SendRadioMessage(scribe, message, channel, scribe);
 
@@ -50,7 +51,13 @@ public sealed partial class SophicScribeSystem : EntitySystem
         base.Initialize();
 
         SubscribeLocalEvent<SophicScribeComponent, InteractHandEvent>(OnInteractHand);
+        SubscribeLocalEvent<SophicScribeComponent, ComponentStartup>(OnStartup);
         SubscribeLocalEvent<GlimmerEventEndedEvent>(OnGlimmerEventEnded);
+    }
+
+    private void OnStartup(EntityUid uid, SophicScribeComponent component, ComponentStartup args)
+    {
+        _glimmerSystem.TryGetNoosphereEntity(uid, out component.Noosphere);
     }
 
     private void OnInteractHand(EntityUid uid, SophicScribeComponent component, InteractHandEvent args)
@@ -61,15 +68,17 @@ public sealed partial class SophicScribeSystem : EntitySystem
 
         component.StateTime = _timing.CurTime + component.StateCD;
 
-        _chat.TrySendInGameICMessage(uid, Loc.GetString("glimmer-report", ("level", _glimmerSystem.Glimmer)), InGameICChatType.Speak, true);
+        _chat.TrySendInGameICMessage(uid, Loc.GetString("glimmer-report", ("level", _glimmerSystem.GetGlimmer(component.Noosphere))), InGameICChatType.Speak, true);
     }
 
     private void OnGlimmerEventEnded(GlimmerEventEndedEvent args)
     {
         var query = EntityQueryEnumerator<SophicScribeComponent>();
-        while (query.MoveNext(out var scribe, out _))
+        while (query.MoveNext(out var scribe, out var scribeComponent))
         {
             if (!TryComp<IntrinsicRadioTransmitterComponent>(scribe, out var radio)) return;
+
+            if (scribeComponent.Noosphere != args.Noosphere) return;
 
             // mind entities when...
             var speaker = scribe;
@@ -78,7 +87,7 @@ public sealed partial class SophicScribeSystem : EntitySystem
                 speaker = swapped.OriginalEntity;
             }
 
-            var message = Loc.GetString(args.Message, ("decrease", args.GlimmerBurned), ("level", _glimmerSystem.Glimmer));
+            var message = Loc.GetString(args.Message, ("decrease", args.GlimmerBurned), ("level", _glimmerSystem.GetGlimmer(args.Noosphere)));
             var channel = _prototypeManager.Index<RadioChannelPrototype>("Common");
             _radioSystem.SendRadioMessage(speaker, message, channel, speaker);
         }

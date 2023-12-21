@@ -1,0 +1,5 @@
+﻿- type: entity
+  id: BaseNoosphere
+  noSpawn: true
+  components:
+    - type: Noosphere

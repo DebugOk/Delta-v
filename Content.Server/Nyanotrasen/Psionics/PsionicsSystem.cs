@@ -8,6 +8,7 @@ using Content.Shared.IdentityManagement;
 using Content.Shared.CCVar;
 using Content.Server.Abilities.Psionics;
 using Content.Server.Chat.Systems;
+using Content.Server.DeltaV.Glimmer.Systems;
 using Content.Server.Electrocution;
 using Content.Server.NPC.Components;
 using Content.Server.NPC.Systems;
@@ -143,8 +144,8 @@ namespace Content.Server.Psionics
                 warn = bonus.Warn;
             }
 
-            if (applyGlimmer)
-                chance += ((float) _glimmerSystem.Glimmer / 1000);
+            if (applyGlimmer && _glimmerSystem.TryGetNoosphereEntity(uid, out var noosphere))
+                chance += ((float) _glimmerSystem.GetGlimmer(noosphere) / 1000);
 
             chance *= multiplier;
 

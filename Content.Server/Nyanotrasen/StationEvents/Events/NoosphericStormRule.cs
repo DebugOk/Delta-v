@@ -1,11 +1,14 @@
 using Robust.Shared.Random;
 using Content.Server.Abilities.Psionics;
+using Content.Server.DeltaV.Glimmer.Systems;
 using Content.Server.GameTicking.Rules.Components;
 using Content.Server.StationEvents.Components;
 using Content.Server.Psionics;
+using Content.Server.Station.Components;
 using Content.Shared.Abilities.Psionics;
 using Content.Shared.Mobs.Systems;
 using Content.Shared.Psionics.Glimmer;
+using Robust.Shared.Map.Components;
 
 namespace Content.Server.StationEvents.Events;
 
@@ -20,6 +23,19 @@ internal sealed class NoosphericStormRule : StationEventSystem<NoosphericStormRu
     {
         base.Started(uid, component, gameRule, args);
 
+        EntityUid targetMap;
+
+        if (!TryGetRandomStation(out var station))
+            return;
+        var stationGridUid = StationSystem.GetLargestGrid(Comp<StationDataComponent>(station.Value));
+        if (stationGridUid == null || !TryComp<MapGridComponent>(stationGridUid, out _))
+            return;
+
+        if (TryComp<TransformComponent>(stationGridUid, out var gridXform) && gridXform.MapUid != null)
+            targetMap = gridXform.MapUid.Value;
+        else
+            return;
+
         List<EntityUid> validList = new();
 
         var query = EntityManager.EntityQueryEnumerator<PotentialPsionicComponent>();
@@ -30,6 +46,9 @@ internal sealed class NoosphericStormRule : StationEventSystem<NoosphericStormRu
 
             // Skip over those who are already psionic or those who are insulated.
             if (HasComp<PsionicComponent>(potentialPsionic) || HasComp<PsionicInsulationComponent>(potentialPsionic))
+                continue;
+
+            if (!TryComp<TransformComponent>(potentialPsionic, out var xform) || xform.MapUid != targetMap)
                 continue;
 
             validList.Add(potentialPsionic);
@@ -53,6 +72,7 @@ internal sealed class NoosphericStormRule : StationEventSystem<NoosphericStormRu
         var glimmerSeverityMod = 1 + (component.GlimmerSeverityCoefficient * (GetSeverityModifier() - 1f));
         var glimmerAdded = (int) Math.Round(baseGlimmerAdd * glimmerSeverityMod);
 
-        _glimmerSystem.Glimmer += glimmerAdded;
+        _glimmerSystem.TryGetNoosphere(gridXform.MapID, out var noosphere);
+        _glimmerSystem.UpdateGlimmer(noosphere, glimmerAdded);
     }
 }

@@ -1,5 +1,6 @@
 using System.Linq;
 using Content.Server.Construction;
+using Content.Server.DeltaV.Glimmer.Systems;
 using Content.Server.Paper;
 using Content.Server.Power.Components;
 using Content.Server.Research.Systems;
@@ -22,7 +23,7 @@ using Robust.Shared.Audio.Systems;
 using Robust.Shared.Prototypes;
 using Robust.Shared.Timing;
 using Robust.Shared.Utility;
-using Content.Shared.Psionics.Glimmer; //Nyano - Summary:. 
+using Content.Shared.Psionics.Glimmer; //Nyano - Summary:.
 
 namespace Content.Server.Xenoarchaeology.Equipment.Systems;
 
@@ -365,9 +366,10 @@ public sealed class ArtifactAnalyzerSystem : EntitySystem
 
         // Nyano - Summary - Begin modified code block: tie artifacts to glimmer.
         if (TryComp<ArtifactAnalyzerComponent>(component.AnalyzerEntity.Value, out var analyzer) &&
-            analyzer != null)
+            analyzer != null &&
+            _glimmerSystem.TryGetNoosphereEntity(component.AnalyzerEntity.Value, out var noosphere))
         {
-            _glimmerSystem.Glimmer += (int) pointValue / analyzer.ExtractRatio;
+            _glimmerSystem.UpdateGlimmer(noosphere, pointValue / analyzer.ExtractRatio);
         }
         // Nyano - End modified code block.
 

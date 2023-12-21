@@ -19,4 +19,6 @@ public sealed partial class SophicScribeComponent : Component
 
     [DataField("stateCD")]
     public TimeSpan StateCD = TimeSpan.FromSeconds(5);
+
+    public EntityUid Noosphere = default!;
 }

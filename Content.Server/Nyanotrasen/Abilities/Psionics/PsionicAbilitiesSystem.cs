@@ -1,3 +1,4 @@
+using Content.Server.DeltaV.Glimmer.Systems;
 using Content.Shared.Abilities.Psionics;
 using Content.Shared.Actions;
 using Content.Shared.Psionics.Glimmer;
@@ -103,7 +104,8 @@ namespace Content.Server.Abilities.Psionics
 
             EntityManager.AddComponent(uid, newComponent);
 
-            _glimmerSystem.Glimmer += _random.Next(1, 5);
+            if (_glimmerSystem.TryGetNoosphereEntity(uid, out var noosphere))
+                _glimmerSystem.UpdateGlimmer(noosphere, _random.Next(1, 5));
         }
 
         public void RemovePsionics(EntityUid uid)

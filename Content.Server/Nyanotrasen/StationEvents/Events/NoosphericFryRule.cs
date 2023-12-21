@@ -3,12 +3,14 @@ using Robust.Shared.Physics.Components;
 using Robust.Shared.Player;
 using Content.Server.Atmos.Components;
 using Content.Server.Atmos.EntitySystems;
+using Content.Server.DeltaV.Glimmer.Systems;
 using Content.Shared.Construction.EntitySystems;
 using Content.Server.GameTicking.Rules.Components;
 using Content.Server.Popups;
 using Content.Server.Power.Components;
 using Content.Server.Power.EntitySystems;
 using Content.Server.Psionics.Glimmer;
+using Content.Server.Station.Components;
 using Content.Server.StationEvents.Components;
 using Content.Shared.Abilities.Psionics;
 using Content.Shared.Damage;
@@ -17,6 +19,7 @@ using Content.Shared.Mobs.Components;
 using Content.Shared.Mobs.Systems;
 using Content.Shared.Psionics.Glimmer;
 using Robust.Shared.Audio.Systems;
+using Robust.Shared.Map.Components;
 
 namespace Content.Server.StationEvents.Events;
 
@@ -42,6 +45,19 @@ internal sealed class NoosphericFryRule : StationEventSystem<NoosphericFryRuleCo
     {
         base.Started(uid, component, gameRule, args);
 
+        EntityUid targetMap;
+
+        if (!TryGetRandomStation(out var station))
+            return;
+        var stationGridUid = StationSystem.GetLargestGrid(Comp<StationDataComponent>(station.Value));
+        if (stationGridUid == null || !TryComp<MapGridComponent>(stationGridUid, out _))
+            return;
+
+        if (TryComp<TransformComponent>(stationGridUid, out var gridXform) && gridXform.MapUid != null)
+            targetMap = gridXform.MapUid.Value;
+        else
+            return;
+
         List<(EntityUid wearer, TinfoilHatComponent worn)> psionicList = new();
 
         var query = EntityQueryEnumerator<PsionicInsulationComponent, MobStateComponent>();
@@ -54,6 +70,9 @@ internal sealed class NoosphericFryRule : StationEventSystem<NoosphericFryRuleCo
                 continue;
 
             if (!TryComp<TinfoilHatComponent>(headItem, out var tinfoil))
+                continue;
+
+            if (Comp<TransformComponent>(psion).MapUid != targetMap)
                 continue;
 
             psionicList.Add((psion, tinfoil));
@@ -77,7 +96,8 @@ internal sealed class NoosphericFryRule : StationEventSystem<NoosphericFryRuleCo
             damage.DamageDict.Add("Heat", 2.5);
             damage.DamageDict.Add("Shock", 2.5);
 
-            if (_glimmerSystem.Glimmer > 500 && _glimmerSystem.Glimmer < 750)
+            if (_glimmerSystem.TryGetNoosphereEntity(pair.wearer, out var noosphere) &&
+                _glimmerSystem.GetGlimmer(noosphere) > 500 && _glimmerSystem.GetGlimmer(noosphere) < 750)
             {
                 damage *= 2;
                 if (TryComp<FlammableComponent>(pair.wearer, out var flammableComponent))
@@ -85,7 +105,8 @@ internal sealed class NoosphericFryRule : StationEventSystem<NoosphericFryRuleCo
                     flammableComponent.FireStacks += 1;
                     _flammableSystem.Ignite(pair.wearer, pair.wearer, flammableComponent);
                 }
-            } else if (_glimmerSystem.Glimmer > 750)
+            }
+            else if (_glimmerSystem.GetGlimmer(noosphere) > 750)
             {
                 damage *= 3;
                 if (TryComp<FlammableComponent>(pair.wearer, out var flammableComponent))
@@ -100,10 +121,10 @@ internal sealed class NoosphericFryRule : StationEventSystem<NoosphericFryRuleCo
 
         // for probers:
         var queryReactive = EntityQueryEnumerator<SharedGlimmerReactiveComponent, TransformComponent, PhysicsComponent>();
-        while (queryReactive.MoveNext(out var reactive, out _, out var xform, out var physics))
+        while (queryReactive.MoveNext(out var reactive, out var comp, out var xform, out var physics))
         {
             // shoot out three bolts of lighting...
-            _glimmerReactiveSystem.BeamRandomNearProber(reactive, 3, 12);
+            _glimmerReactiveSystem.BeamRandomNearProber(reactive, comp, 3, 12);
 
             // try to anchor if we can
             if (!xform.Anchored)

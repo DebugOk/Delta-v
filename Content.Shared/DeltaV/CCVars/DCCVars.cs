@@ -15,4 +15,20 @@ public sealed class DCCVars
     /// </summary>
     public static readonly CVarDef<bool> RoundEndPacifist =
         CVarDef.Create("game.round_end_pacifist", false, CVar.SERVERONLY);
+
+    /*
+     * Glimmer
+     */
+    /// <summary>
+    ///    Whether glimmer is enabled.
+    /// </summary>
+    public static readonly CVarDef<bool> GlimmerEnabled =
+        CVarDef.Create("glimmer.enabled", true, CVar.REPLICATED);
+
+    /// <summary>
+    ///     Passive glimmer drain per second.
+    ///     Note that this is randomized and this is an average value.
+    /// </summary>
+    public static readonly CVarDef<float> GlimmerLostPerSecond =
+        CVarDef.Create("glimmer.passive_drain_per_second", 0.1f, CVar.SERVERONLY);
 }

@@ -1,4 +1,5 @@
 ﻿using System.Linq;
+using Content.Server.DeltaV.Glimmer.Systems;
 using Content.Server.GameTicking;
 using Content.Server.StationEvents.Components;
 using Content.Shared.CCVar;
@@ -7,6 +8,9 @@ using Robust.Shared.Configuration;
 using Robust.Shared.Prototypes;
 using Robust.Shared.Random;
 using Content.Server.Psionics.Glimmer;
+using Content.Server.Station.Components;
+using Content.Server.Station.Systems;
+using Content.Shared.DeltaV.CCVars;
 using Content.Shared.Psionics.Glimmer;
 namespace Content.Server.StationEvents;
 
@@ -18,6 +22,7 @@ public sealed class EventManagerSystem : EntitySystem
     [Dependency] private readonly IPrototypeManager _prototype = default!;
     [Dependency] public readonly GameTicker GameTicker = default!;
     [Dependency] private readonly GlimmerSystem _glimmerSystem = default!; //Nyano - Summary: pulls in the glimmer system.
+    [Dependency] private readonly StationSystem _stationSystem = default!; // Nyano - Needed for some stuff
 
     private ISawmill _sawmill = default!;
 
@@ -208,14 +213,23 @@ public sealed class EventManagerSystem : EntitySystem
 
         // Nyano - Summary: - Begin modified code block: check for glimmer events.
         // This could not be cleanly done anywhere else.
-        if (_configurationManager.GetCVar(CCVars.GlimmerEnabled) &&
-            prototype.TryGetComponent<GlimmerEventComponent>(out var glimmerEvent) &&
-            (_glimmerSystem.Glimmer < glimmerEvent.MinimumGlimmer ||
-            _glimmerSystem.Glimmer > glimmerEvent.MaximumGlimmer))
+
+        var stations = _stationSystem.GetStations().ToList();
+        var station = stations[_random.Next(stations.Count)];
+        var largestGrid = _stationSystem.GetLargestGrid(Comp<StationDataComponent>(station));
+        if (largestGrid != null && _configurationManager.GetCVar(DCCVars.GlimmerEnabled) &&
+            prototype.TryGetComponent<GlimmerEventComponent>(out var glimmerEvent))
         {
-            return false;
+            if (!_glimmerSystem.TryGetNoosphereEntity(largestGrid.Value, out var noosphere))
+                return false;
+
+            var glimmer = _glimmerSystem.GetGlimmer(noosphere);
+            if (glimmer < glimmerEvent.MinimumGlimmer ||
+                glimmer > glimmerEvent.MaximumGlimmer)
+            {
+                return false;
+            }
         }
-        // Nyano - End modified code block.
 
         return true;
     }

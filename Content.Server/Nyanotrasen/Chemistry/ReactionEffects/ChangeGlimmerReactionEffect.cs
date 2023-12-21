@@ -1,3 +1,4 @@
+using Content.Server.DeltaV.Glimmer.Systems;
 using Content.Shared.Chemistry.Reagent;
 using Content.Shared.Psionics.Glimmer;
 using Robust.Shared.Prototypes;
@@ -21,6 +22,9 @@ public sealed partial class ChangeGlimmerReactionEffect : ReagentEffect
     {
         var glimmersys = args.EntityManager.EntitySysManager.GetEntitySystem<GlimmerSystem>();
 
-        glimmersys.Glimmer += Count;
+        if (!glimmersys.TryGetNoosphereEntity(args.SolutionEntity, out var noosphere))
+            return;
+
+        glimmersys.UpdateGlimmer(noosphere, Count);
     }
 }

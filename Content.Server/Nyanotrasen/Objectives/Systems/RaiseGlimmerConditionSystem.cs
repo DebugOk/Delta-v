@@ -32,7 +32,8 @@ namespace Content.Server.Objectives.Systems
 
         private float GetProgress(int target)
         {
-            var glimmer = _sysMan.GetEntitySystem<GlimmerSystem>().Glimmer;
+            //var glimmer = _sysMan.GetEntitySystem<GlimmerSystem>().Glimmer;
+            var glimmer = target;
             var progress = Math.Min((float) glimmer / (float) target, 1f);
             return progress;
         }

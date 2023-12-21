@@ -5,6 +5,10 @@ using Content.Shared.CCVar;
 using Content.Shared.Psionics.Glimmer;
 using Content.Shared.GameTicking;
 using Content.Server.CartridgeLoader.Cartridges;
+using Content.Server.DeltaV.Glimmer.Systems;
+using Content.Shared.DeltaV.CCVars;
+using Content.Shared.DeltaV.Glimmer.Components;
+using Content.Shared.DeltaV.Glimmer.Events;
 
 namespace Content.Server.Psionics.Glimmer
 {
@@ -22,6 +26,8 @@ namespace Content.Server.Psionics.Glimmer
         /// List of glimmer values spaced by minute.
         public List<int> GlimmerValues = new();
 
+        private List<EntityUid> _noospheres = new();
+
         public TimeSpan TargetUpdatePeriod = TimeSpan.FromSeconds(6);
 
         private int _updateIncrementor;
@@ -34,12 +40,25 @@ namespace Content.Server.Psionics.Glimmer
         {
             base.Initialize();
             SubscribeLocalEvent<RoundRestartCleanupEvent>(OnRoundRestartCleanup);
-            _cfg.OnValueChanged(CCVars.GlimmerLostPerSecond, UpdatePassiveGlimmer, true);
+            SubscribeLocalEvent<NoosphereCreatedEvent>(OnNoosphereCreated);
+            SubscribeLocalEvent<NoosphereDestroyedEvent>(OnNoosphereDestroyed);
+            _cfg.OnValueChanged(DCCVars.GlimmerLostPerSecond, UpdatePassiveGlimmer, true);
         }
 
         private void OnRoundRestartCleanup(RoundRestartCleanupEvent args)
         {
             GlimmerValues.Clear();
+            _noospheres.Clear();
+        }
+
+        private void OnNoosphereCreated(NoosphereCreatedEvent args)
+        {
+            _noospheres.Add(args.Entity);
+        }
+
+        private void OnNoosphereDestroyed(NoosphereDestroyedEvent args)
+        {
+            _noospheres.Remove(args.Entity);
         }
 
         public override void Update(float frameTime)
@@ -54,21 +73,29 @@ namespace Content.Server.Psionics.Glimmer
             var delta = curTime - LastUpdateTime;
             var maxGlimmerLost = (int) Math.Round(delta.TotalSeconds * _glimmerLostPerSecond);
 
-            // It used to be 75% to lose one glimmer per ten seconds, but now it's 50% per six seconds.
-            // The probability is exactly the same over the same span of time. (0.25 ^ 3 == 0.5 ^ 6)
-            // This math is just easier to do for pausing's sake.
-            var actualGlimmerLost = _random.Next(0, 1 + maxGlimmerLost);
 
-            _glimmerSystem.Glimmer -= actualGlimmerLost;
-
-            _updateIncrementor++;
-
-            // Since we normally update every 6 seconds, this works out to a minute.
-            if (_updateIncrementor == 10)
+            // Loop over every noosphere, as we need to update all of them
+            foreach (var noosphere in _noospheres)
             {
-                GlimmerValues.Add(_glimmerSystem.Glimmer);
+                if (!TryComp<NoosphereComponent>(noosphere, out var noosphereComponent))
+                    continue;
 
-                _updateIncrementor = 0;
+                // It used to be 75% to lose one glimmer per ten seconds, but now it's 50% per six seconds.
+                // // The probability is exactly the same over the same span of time. (0.25 ^ 3 == 0.5 ^ 6)
+                // // This math is just easier to do for pausing's sake.
+                var actualGlimmerLost = _random.Next(0, 1 + maxGlimmerLost);
+
+                _glimmerSystem.UpdateGlimmer(noosphere, -actualGlimmerLost);
+
+                _updateIncrementor++;
+
+                // Since we normally update every 6 seconds, this works out to a minute.
+                if (_updateIncrementor == 10)
+                {
+                    GlimmerValues.Add(noosphereComponent.Glimmer);
+
+                    _updateIncrementor = 0;
+                }
             }
 
             NextUpdateTime = curTime + TargetUpdatePeriod;

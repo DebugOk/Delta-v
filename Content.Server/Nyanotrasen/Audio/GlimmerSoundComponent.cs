@@ -1,5 +1,6 @@
 using Content.Server.Psionics.Glimmer;
 using Content.Shared.Audio;
+using Content.Shared.DeltaV.Glimmer;
 using Content.Shared.Psionics.Glimmer;
 using Robust.Shared.Audio;
 using Robust.Shared.ComponentTrees;

@@ -1,3 +1,4 @@
+using Content.Shared.DeltaV.Glimmer;
 using Robust.Shared.Audio;
 
 namespace Content.Shared.Psionics.Glimmer
@@ -37,5 +38,12 @@ namespace Content.Shared.Psionics.Glimmer
         /// </summary>
         [DataField("shockNoises")]
         public SoundSpecifier ShockNoises { get; private set; } = new SoundCollectionSpecifier("sparks");
+
+        /// <summary>
+        /// Attached noosphere entity. Surely no one is stupid enough to move probers between maps?
+        /// </summary>
+        public EntityUid Noosphere { get; set; }
+
+        public GlimmerTier GlimmerTier { get; set; } = GlimmerTier.Minimal;
     }
 }

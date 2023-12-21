@@ -9,12 +9,13 @@ using Content.Shared.Database;
 using Content.Shared.Drugs;
 using Content.Shared.Mobs;
 using Content.Shared.Mobs.Components;
-using Content.Shared.Psionics.Glimmer;
 using Robust.Shared.Network;
 using Robust.Shared.Player;
 using Robust.Shared.Random;
 using System.Linq;
 using System.Text;
+using Content.Server.DeltaV.Glimmer.Systems;
+using Content.Shared.DeltaV.Glimmer.Components;
 
 namespace Content.Server.Nyanotrasen.Chat
 {
@@ -89,14 +90,18 @@ namespace Content.Server.Nyanotrasen.Chat
 
             _chatManager.ChatMessageToMany(ChatChannel.Telepathic, message, adminMessageWrap, source, hideChat, true, admins, Color.PaleVioletRed);
 
-            if (_random.Prob(0.1f))
-                _glimmerSystem.Glimmer++;
-
-            if (_random.Prob(Math.Min(0.33f + ((float) _glimmerSystem.Glimmer / 1500), 1)))
+            if (_glimmerSystem.TryGetNoosphereEntity(source, out var noosphere) &&
+                TryComp<NoosphereComponent>(noosphere, out var noosphereComponent))
             {
-                float obfuscation = (0.25f + (float) _glimmerSystem.Glimmer / 2000);
-                var obfuscated = ObfuscateMessageReadability(message, obfuscation);
-                _chatManager.ChatMessageToMany(ChatChannel.Telepathic, obfuscated, messageWrap, source, hideChat, false, GetDreamers(clients), Color.PaleVioletRed);
+                if (_random.Prob(0.1f))
+                    _glimmerSystem.UpdateGlimmer(noosphere, 1);
+
+                if (_random.Prob(Math.Min(0.33f + ((float) noosphereComponent.Glimmer / 1500), 1)))
+                {
+                    float obfuscation = (0.25f + (float) noosphereComponent.Glimmer / 2000);
+                    var obfuscated = ObfuscateMessageReadability(message, obfuscation);
+                    _chatManager.ChatMessageToMany(ChatChannel.Telepathic, obfuscated, messageWrap, source, hideChat, false, GetDreamers(clients), Color.PaleVioletRed);
+                }
             }
 
             foreach (var repeater in EntityQuery<TelepathicRepeaterComponent>())

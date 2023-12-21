@@ -23,5 +23,10 @@ namespace Content.Server.Psionics.Glimmer
         /// </summary>
         [DataField("addToGlimmer")]
         public bool AddToGlimmer = true;
+
+        /// <summary>
+        ///     The attached Noosphere, saves having to query it every time.
+        /// </summary>
+        public EntityUid Noosphere = default!;
     }
 }

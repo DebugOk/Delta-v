@@ -1,5 +1,6 @@
 using Content.Shared.Actions;
 using Content.Shared.Administration.Logs;
+using Content.Shared.DeltaV.Glimmer;
 using Content.Shared.Mobs;
 using Content.Shared.Mobs.Components;
 using Content.Shared.Popups;
@@ -15,7 +16,7 @@ namespace Content.Shared.Abilities.Psionics
         [Dependency] private readonly EntityLookupSystem _lookup = default!;
         [Dependency] private readonly SharedPopupSystem _popups = default!;
         [Dependency] private readonly ISharedAdminLogManager _adminLogger = default!;
-        [Dependency] private readonly GlimmerSystem _glimmerSystem = default!;
+        [Dependency] private readonly SharedGlimmerSystem _glimmerSystem = default!;
         [Dependency] private readonly IRobustRandom _robustRandom = default!;
 
         public override void Initialize()
@@ -88,7 +89,8 @@ namespace Content.Shared.Abilities.Psionics
             var ev = new PsionicPowerUsedEvent(uid, power);
             RaiseLocalEvent(uid, ev, false);
 
-            _glimmerSystem.Glimmer += _robustRandom.Next(minGlimmer, maxGlimmer);
+            if (_glimmerSystem.TryGetNoosphereEntity(uid, out var noosphere))
+                _glimmerSystem.UpdateGlimmer(noosphere, _robustRandom.Next(minGlimmer, maxGlimmer));
         }
     }
 

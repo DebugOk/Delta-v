@@ -1,4 +1,5 @@
 using Content.Server.Anomaly.Components;
+using Content.Server.DeltaV.Glimmer.Systems;
 using Content.Server.Power.Components;
 using Content.Server.Power.EntitySystems;
 using Content.Shared.Anomaly.Components;
@@ -22,6 +23,12 @@ namespace Content.Server.Psionics.Glimmer
 
             SubscribeLocalEvent<GlimmerSourceComponent, AnomalyPulseEvent>(OnAnomalyPulse);
             SubscribeLocalEvent<GlimmerSourceComponent, AnomalySupercriticalEvent>(OnAnomalySupercritical);
+            SubscribeLocalEvent<GlimmerSourceComponent, ComponentStartup>(OnStartup);
+        }
+
+        private void OnStartup(EntityUid uid, GlimmerSourceComponent component, ComponentStartup args)
+        {
+            _glimmerSystem.TryGetNoosphereEntity(uid, out component.Noosphere);
         }
 
         private void OnAnomalyVesselPowerChanged(EntityUid uid, AnomalyVesselComponent component, ref PowerChangedEvent args)
@@ -45,12 +52,12 @@ namespace Content.Server.Psionics.Glimmer
             // component.
 
             if (TryComp<AnomalyComponent>(uid, out var anomaly))
-                _glimmerSystem.Glimmer += (int) (5f * anomaly.Severity);
+                _glimmerSystem.UpdateGlimmer(component.Noosphere, (int) (5f * anomaly.Severity));
         }
 
         private void OnAnomalySupercritical(EntityUid uid, GlimmerSourceComponent component, ref AnomalySupercriticalEvent args)
         {
-            _glimmerSystem.Glimmer += 100;
+            _glimmerSystem.UpdateGlimmer(component.Noosphere, 100);
         }
 
         public override void Update(float frameTime)
@@ -71,11 +78,11 @@ namespace Content.Server.Psionics.Glimmer
                     source.Accumulator -= source.SecondsPerGlimmer;
                     if (source.AddToGlimmer)
                     {
-                        _glimmerSystem.Glimmer++;
+                        _glimmerSystem.UpdateGlimmer(source.Noosphere, 1);
                     }
                     else
                     {
-                        _glimmerSystem.Glimmer--;
+                        _glimmerSystem.UpdateGlimmer(source.Noosphere, -1);
                     }
                 }
             }

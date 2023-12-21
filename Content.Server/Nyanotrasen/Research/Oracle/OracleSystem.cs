@@ -2,6 +2,7 @@ using System.Linq;
 using Content.Server.Botany;
 using Content.Server.Chat.Managers;
 using Content.Server.Chat.Systems;
+using Content.Server.DeltaV.Glimmer.Systems;
 using Content.Server.Fluids.EntitySystems;
 using Content.Server.Psionics;
 using Content.Shared.Abilities.Psionics;
@@ -162,7 +163,13 @@ public sealed class OracleSystem : EntitySystem
             .Where(x => !x.Abstract)
             .Select(x => x.ID).ToList();
 
-        var amount = 20 + _random.Next(1, 30) + _glimmerSystem.Glimmer / 10f;
+        float amount;
+        if (_glimmerSystem.TryGetNoosphereEntity(uid, out var noosphere))
+            amount = 20 + _random.Next(1, 30) + _glimmerSystem.GetGlimmer(noosphere) / 10f;
+        else
+            amount = 20 + _random.Next(1, 30);
+
+        //var amount = 20 + _random.Next(1, 30) + _glimmerSystem.Glimmer / 10f;
         amount = (float) Math.Round(amount);
 
         var sol = new Solution();
